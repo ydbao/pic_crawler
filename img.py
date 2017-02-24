@@ -41,7 +41,7 @@ if __name__ == '__main__':
             html = getHtml("https://tuchong.com/tags/"+query_string+"/?type=new")
         else:
             html = getHtml("https://tuchong.com/tags/"+query_string+"/?type=new&page=" + str(i))
-
+        i += 1
         if html != '':
             detllst = findUrl2(html)
             for detail in detllst:
@@ -56,7 +56,8 @@ if __name__ == '__main__':
                     print '正在下载第 ' + str(count) + ' 张'
                     img_local.write(img_net)  # 将网络文件写入到本地
                     img_local.close()  # 关闭本地文件
-        i+=1
+        else:
+            break
 
     end_time = time()
     print('共下载%s张素材，耗时%.2fs' % (count, end_time - start_time))

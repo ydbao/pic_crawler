@@ -35,7 +35,6 @@ head = {'User-Agent': user_agent}
 TimeOut = 30
 
 
-
 def downfile(down_data):
     print u"开始下载：", down_data[0], down_data[1]
     try:
@@ -43,7 +42,7 @@ def downfile(down_data):
         with open(down_data[0], 'wb') as file:
             file.write(resource)
     except Exception as e:
-        print("下载失败", e)
+        print "下载失败" + str(e)
 
 
 def request_page_text(url):
@@ -52,43 +51,38 @@ def request_page_text(url):
         Page.encoding = 'utf-8'
         return Page.text
     except Exception as e:
-        print("请求失败了...重试中(5s)", e)
+        print "请求失败了...重试中(5s)" + str(e)
         sleep(5)
-        print("暂停结束")
+        print "暂停结束"
         request_page_text(url)
 
 
-def request_url_download(url):
-    print(url)
+def request_url_download():
+    # print(url)
     global page_count
     page_count += 1
     global photo_number
-    text = request_page_text(url)
+    print page_count
+    text = request_page_text(url_query+str(page_count))
     pattern = re.compile('{"pin_id":(\d*?),.*?"key":"(.*?)",.*?"like_count":(\d*?),.*?"repin_count":(\d*?),.*?}', re.S)
     # 参数re.S 是正则表达式，编译参数标识re.DOTALL，即.匹配除、\n 所有字符
 
     img_query_items = re.findall(pattern, text)
-
     for url_items in img_query_items:
+        photo_number += 1
         max_pin_id = url_items[0]
         x_key = url_items[1]
-        x_like_count = int(url_items[2])
-        x_repin_count = int(url_items[3])
-        if (x_repin_count > 10 and x_like_count > 10) or x_repin_count > 100 or x_like_count > 20:
-            print("开始下载第{0}张图片".format(photo_number))
-            url_item = url_image + x_key
-            filename = down_dir + str(max_pin_id) + ".jpg"
-            if os.path.isfile(filename):
-                print("文件存在：", filename)
-                continue
-            if photo_number >= image_numbers:
-                return
-            down_data.append([filename, url_item])
-            photo_number += 1
-        else:
-            break
+        print "开始下载第{0}张图片".format(photo_number)
+        url_item = url_image + x_key
+        filename = down_dir + str(max_pin_id) + ".jpg"
+        if os.path.isfile(filename):
+            print "文件存在：" + filename
+            continue
+        down_data.append([filename, url_item])
+        if photo_number >= image_numbers:
+            return down_data
     if len(img_query_items) != 0:
-        request_url_download(url_query + str(page_count))
+        request_url_download()
     return down_data
 
 
@@ -98,16 +92,16 @@ if __name__ == '__main__':
     query_string = raw_input('请输入要查询的关键词：')
     global image_numbers
     image_numbers = int(input('下载多少张：'))
-    url_query = "http://huaban.com/search/?q=" + query_string + "&per_page=20&wfl=1&page="
+    url_query = "http://huaban.com/search/?q=" + query_string + "&per_page=30&wfl=1&page="
     if not os.path.exists(down_dir):
         os.makedirs(down_dir)
         os.chdir(down_dir)
     else:
         os.chdir(down_dir)
-    s = request_url_download(url_query + str(page_count))
-    pool = ThreadPool(10)
+    s = request_url_download()
+    pool = ThreadPool(1)
     list(pool.map(downfile, s))
     pool.close()
     pool.join()
     end_time = time()
-    print('共下载%s张素材，耗时%.2fs' % (len(s), end_time - start_time))
+    print '共下载%s张素材，耗时%.2fs' % (len(s), end_time - start_time)
